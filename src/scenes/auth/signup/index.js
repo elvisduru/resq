@@ -20,30 +20,39 @@ import {
 } from './extra/icons';
 import {KeyboardAvoidingView} from './extra/3rd-party';
 import auth from '@react-native-firebase/auth';
+import firestore from '@react-native-firebase/firestore';
 
 export default ({navigation}) => {
-  const [userName, setUserName] = React.useState();
+  const [username, setusername] = React.useState();
   const [email, setEmail] = React.useState();
+  const [phone, setPhone] = React.useState();
   const [password, setPassword] = React.useState();
   const [passwordVisible, setPasswordVisible] = React.useState(false);
   const styles = useStyleSheet(themedStyles);
-  const onSignUpButtonPress = () => {
+  const onSignUpButtonPress = async () => {
     if (email && password) {
-      auth()
-        .createUserWithEmailAndPassword(email, password)
-        .then(() => {
-          console.log('User account created & signed in!');
-        })
-        .catch((error) => {
+      try {
+        await auth().createUserWithEmailAndPassword(email, password);
+        await auth().currentUser.updateProfile({displayName: username});
+        await firestore()
+          .collection('users')
+          .doc(auth().currentUser.email)
+          .set({
+            username,
+            email,
+            phone,
+          });
+      } catch (error) {
+        (error) => {
           if (error.code === 'auth/email-already-in-use') {
             console.log('That email address is already in use!');
           }
           if (error.code === 'auth/invalid-email') {
             console.log('That email address is invalid!');
           }
-
           console.log(error);
-        });
+        };
+      }
     }
   };
   const onSignInButtonPress = () => {
@@ -84,8 +93,8 @@ export default ({navigation}) => {
             autoCapitalize="none"
             placeholder="User Name"
             accessoryLeft={PersonIcon}
-            value={userName}
-            onChangeText={setUserName}
+            value={username}
+            onChangeText={setusername}
           />
           <Input
             style={styles.formInput}
@@ -105,6 +114,18 @@ export default ({navigation}) => {
             accessoryLeft={renderIcon}
             value={password}
             onChangeText={setPassword}
+          />
+          <Input
+            style={styles.formInput}
+            status="control"
+            autoCapitalize="none"
+            placeholder="Phone number"
+            accessoryLeft={(props) => (
+              <Icon {...props} name="message-circle-outline" />
+            )}
+            keyboardType="number-pad"
+            value={phone}
+            onChangeText={setPhone}
           />
         </View>
         <Button
@@ -187,6 +208,7 @@ const themedStyles = StyleService.create({
   },
   signUpButton: {
     marginHorizontal: 16,
+    marginVertical: 16,
   },
   signInButton: {
     marginVertical: 12,
@@ -198,9 +220,14 @@ const themedStyles = StyleService.create({
   socialAuthButtonsContainer: {
     flexDirection: 'row',
     justifyContent: 'space-evenly',
+    opacity: 0,
   },
   socialAuthHintText: {
     alignSelf: 'center',
     marginBottom: 16,
+    opacity: 0,
+  },
+  formInput: {
+    marginTop: 16,
   },
 });

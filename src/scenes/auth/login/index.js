@@ -8,6 +8,7 @@ import auth from '@react-native-firebase/auth';
 
 export default ({navigation}) => {
   const [email, setEmail] = React.useState();
+  const [error, setError] = React.useState();
   const [password, setPassword] = React.useState();
   const [passwordVisible, setPasswordVisible] = React.useState(false);
   const onSignInButtonPress = () => {
@@ -20,11 +21,16 @@ export default ({navigation}) => {
         .catch((error) => {
           if (error.code === 'auth/email-already-in-use') {
             console.log('That email address is already in use!');
+            setError('That email address is already in use!');
           }
           if (error.code === 'auth/invalid-email') {
             console.log('That email address is invalid!');
+            setError('That email address is invalid!');
           }
-
+          if (error.code === 'auth/user-not-found') {
+            console.log('There is no user record found');
+            setError('There is no user record found');
+          }
           console.log(error);
         });
     }
@@ -70,6 +76,9 @@ export default ({navigation}) => {
             secureTextEntry={!passwordVisible}
             onChangeText={setPassword}
           />
+          <View style={{alignItems: 'center'}}>
+            <Text status="danger">{error}</Text>
+          </View>
         </View>
         <Button
           style={styles.signInButton}
@@ -151,9 +160,11 @@ const styles = StyleSheet.create({
   socialAuthButtonsContainer: {
     flexDirection: 'row',
     justifyContent: 'space-evenly',
+    opacity: 0,
   },
   socialAuthHintText: {
     alignSelf: 'center',
     marginBottom: 16,
+    opacity: 0,
   },
 });
