@@ -30,20 +30,19 @@ export default ({navigation}) => {
   const [passwordVisible, setPasswordVisible] = React.useState(false);
   const styles = useStyleSheet(themedStyles);
   const onSignUpButtonPress = async () => {
-    if (email && password) {
-      try {
-        await auth().createUserWithEmailAndPassword(email, password);
-        await auth().currentUser.updateProfile({displayName: username});
-        await firestore()
-          .collection('users')
-          .doc(auth().currentUser.email)
-          .set({
-            username,
-            email,
-            phone,
-          });
-      } catch (error) {
-        (error) => {
+    console.log('Creating New Account...');
+    if (email && password && phone) {
+      firestore()
+        .collection('users')
+        .doc(email)
+        .set({
+          username,
+          email,
+          phone,
+        })
+        .then(() => auth().createUserWithEmailAndPassword(email, password))
+        .then(() => auth().currentUser.updateProfile({displayName: username}))
+        .catch((error) => {
           if (error.code === 'auth/email-already-in-use') {
             console.log('That email address is already in use!');
           }
@@ -51,8 +50,9 @@ export default ({navigation}) => {
             console.log('That email address is invalid!');
           }
           console.log(error);
-        };
-      }
+        });
+    } else {
+      alert('Please complete all fields!');
     }
   };
   const onSignInButtonPress = () => {

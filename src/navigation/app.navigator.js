@@ -22,12 +22,15 @@ export const AppNavigator = () => {
   // Handle user state changes
   const onAuthStateChanged = (user) => {
     setUser(user);
+    console.log('\nSIGNED IN AS', user);
     if (user) {
-      let email = auth().currentUser.email;
+      let email = user.email;
+      console.log('\n\n\nUSER EMAIL', email, '\n\n\n');
       firestore()
         .doc(`users/${email}`)
         .get()
         .then((userData) => {
+          console.log('USER', userData);
           userID = userData.data().phone.slice(-4);
           setUserID(userID);
         })
