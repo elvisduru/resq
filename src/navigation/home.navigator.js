@@ -58,8 +58,8 @@ const alarmNotifData = {
 
 export const HomeNavigator = ({user}) => {
   const pubnub = new PubNub({
-    publishKey: 'pub-c-6599cd97-7ab1-4b04-8a9a-051169b24b2b',
-    subscribeKey: 'sub-c-eb105b66-bad2-11ea-8e27-9244a32233bd',
+    publishKey: 'pub-c-59cc5305-2582-4efd-a24b-30b5b53ef765',
+    subscribeKey: 'sub-c-ca070872-e04b-11ea-adf0-fa44e2f062bb',
     autoNetworkDetection: true,
     restore: true,
     uuid: user,
