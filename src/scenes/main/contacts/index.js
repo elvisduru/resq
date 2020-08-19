@@ -271,8 +271,11 @@ export const ContactsScreen = ({navigation}) => {
             <Button
               status="info"
               accessoryLeft={(props) => (
-                <Icon {...props} name="message-circle-outline" />
+                <Icon {...props} name="shake-outline" />
               )}
+              onPress={() => {
+                Communications.phonecall('911', true);
+              }}
             />
             <Button
               status={status}

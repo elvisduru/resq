@@ -173,10 +173,12 @@ export const HomeScreen = ({navigation}) => {
   useEffect(() => {
     const unsubscribe = messaging().onMessage(async (remoteMessage) => {
       console.log(remoteMessage);
-      Alert.alert(
-        'A new ResQ Message arrived',
-        JSON.stringify(remoteMessage.notification.body),
-      );
+      if (remoteMessage.notification.body) {
+        Alert.alert(
+          'A new ResQ Message arrived',
+          JSON.stringify(remoteMessage.notification.body),
+        );
+      }
     });
 
     return unsubscribe;
