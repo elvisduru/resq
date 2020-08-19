@@ -1,5 +1,5 @@
 import React from 'react';
-import {View, TouchableWithoutFeedback} from 'react-native';
+import {View, TouchableWithoutFeedback, Image} from 'react-native';
 import {
   Button,
   Input,
@@ -78,15 +78,20 @@ export default ({navigation}) => {
 
   return (
     <KeyboardAvoidingView>
-      <ImageOverlay
+      {/* <ImageOverlay
         style={styles.container}
-        source={require('./assets/image-background.jpg')}>
+        source={require('./assets/image-background.jpg')}> */}
+      <View style={styles.container}>
         <View style={styles.headerContainer}>
-          <ProfileAvatar
+          {/* <ProfileAvatar
             style={styles.profileAvatar}
             resizeMode="center"
             source={require('./assets/image-person.png')}
             editButton={renderPhotoButton}
+          /> */}
+          <Image
+            source={require('./assets/resq_logo.png')}
+            style={styles.logo}
           />
         </View>
         <View style={styles.formContainer}>
@@ -168,13 +173,15 @@ export default ({navigation}) => {
           onPress={onSignInButtonPress}>
           Already have account? Sign In
         </Button>
-      </ImageOverlay>
+      </View>
+      {/* </ImageOverlay> */}
     </KeyboardAvoidingView>
   );
 };
 const themedStyles = StyleService.create({
   container: {
     flex: 1,
+    backgroundColor: '#222B45',
   },
   headerContainer: {
     justifyContent: 'center',
@@ -231,5 +238,10 @@ const themedStyles = StyleService.create({
   },
   formInput: {
     marginTop: 16,
+  },
+  logo: {
+    resizeMode: 'contain',
+    height: 50,
+    width: 110,
   },
 });

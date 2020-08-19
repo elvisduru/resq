@@ -1,5 +1,5 @@
-import React from 'react';
-import {StyleSheet, View, TouchableWithoutFeedback} from 'react-native';
+import React, {useEffect} from 'react';
+import {StyleSheet, View, TouchableWithoutFeedback, Image} from 'react-native';
 import {Button, Input, Text, Icon} from '@ui-kitten/components';
 import {ImageOverlay} from './extra/image-overlay.component';
 import {FacebookIcon, GoogleIcon, PersonIcon, TwitterIcon} from './extra/icons';
@@ -11,6 +11,7 @@ export default ({navigation}) => {
   const [error, setError] = React.useState();
   const [password, setPassword] = React.useState();
   const [passwordVisible, setPasswordVisible] = React.useState(false);
+
   const onSignInButtonPress = () => {
     if (email && password) {
       auth()
@@ -48,13 +49,20 @@ export default ({navigation}) => {
   );
   return (
     <KeyboardAvoidingView>
-      <ImageOverlay
+      {/* <ImageOverlay
         style={styles.container}
-        source={require('./assets/image-background.jpg')}>
+        source={require('./assets/image-background.jpg')}> */}
+      <View style={styles.container}>
         <View style={styles.headerContainer}>
-          <Text category="h1" status="control">
+          {/* <Text category="h1" status="control">
             Hello
-          </Text>
+          </Text> */}
+          <View>
+            <Image
+              source={require('./assets/resq_logo.png')}
+              style={styles.logo}
+            />
+          </View>
           <Text style={styles.signInLabel} category="s1" status="control">
             Sign in to your account
           </Text>
@@ -118,13 +126,15 @@ export default ({navigation}) => {
           onPress={onSignUpButtonPress}>
           Don't have an account? Sign Up
         </Button>
-      </ImageOverlay>
+      </View>
+      {/* </ImageOverlay> */}
     </KeyboardAvoidingView>
   );
 };
 const styles = StyleSheet.create({
   container: {
     flex: 1,
+    backgroundColor: '#222B45',
   },
   headerContainer: {
     minHeight: 216,
@@ -166,5 +176,10 @@ const styles = StyleSheet.create({
     alignSelf: 'center',
     marginBottom: 16,
     opacity: 0,
+  },
+  logo: {
+    resizeMode: 'contain',
+    height: 50,
+    width: 110,
   },
 });
