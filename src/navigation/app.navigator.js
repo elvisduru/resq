@@ -1,9 +1,11 @@
-import React, {useState, useEffect} from 'react';
+import React, {useState, useEffect, createContext} from 'react';
 import {DefaultTheme, NavigationContainer} from '@react-navigation/native';
 import {HomeNavigator} from './home.navigator';
 import {AuthNavigator} from './auth.navigator';
 import auth from '@react-native-firebase/auth';
 import firestore from '@react-native-firebase/firestore';
+import {ChannelProvider} from '../../ChannelContext';
+import {navigationRef} from '../../rootnavigation';
 
 const navigationTheme = {
   ...DefaultTheme,
@@ -46,11 +48,13 @@ export const AppNavigator = () => {
   }, []);
 
   return (
-    <NavigationContainer theme={navigationTheme}>
+    <NavigationContainer ref={navigationRef} theme={navigationTheme}>
       {initializing ? null : !user ? (
         <AuthNavigator />
       ) : (
-        <HomeNavigator user={userID} />
+        <ChannelProvider value={userID}>
+          <HomeNavigator />
+        </ChannelProvider>
       )}
     </NavigationContainer>
   );

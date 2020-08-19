@@ -28,10 +28,12 @@ export default ({navigation}) => {
   const [phone, setPhone] = React.useState();
   const [password, setPassword] = React.useState();
   const [passwordVisible, setPasswordVisible] = React.useState(false);
+  const [btnText, setBtnText] = React.useState('SIGN UP');
   const styles = useStyleSheet(themedStyles);
   const onSignUpButtonPress = async () => {
     console.log('Creating New Account...');
     if (email && password && phone) {
+      setBtnText('Loading...');
       firestore()
         .collection('users')
         .doc(email)
@@ -132,7 +134,7 @@ export default ({navigation}) => {
           style={styles.signUpButton}
           size="giant"
           onPress={onSignUpButtonPress}>
-          SIGN UP
+          {btnText}
         </Button>
         <View style={styles.socialAuthContainer}>
           <Text style={styles.socialAuthHintText} status="control">

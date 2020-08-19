@@ -1,4 +1,4 @@
-import React, {useState, useEffect, useRef} from 'react';
+import React, {useState, useEffect, useRef, useContext} from 'react';
 import {StyleSheet, View, Dimensions, ToastAndroid, Alert} from 'react-native';
 import {PERMISSIONS, request, RESULTS} from 'react-native-permissions';
 import {
@@ -18,15 +18,19 @@ import {MenuIcon} from '../../../components/menu-icon';
 import {SafeAreaLayoutComponent} from '../../../components/safe-area-layout.component';
 import MapView, {Marker, AnimatedRegion} from 'react-native-maps';
 import Geolocation from 'react-native-geolocation-service';
-import {usePubNub} from 'pubnub-react';
+// import {usePubNub} from 'pubnub-react';
 import auth from '@react-native-firebase/auth';
 import ReactNativeAN from 'react-native-alarm-notification';
 import Communications from 'react-native-communications';
 import firestore from '@react-native-firebase/firestore';
 import messaging from '@react-native-firebase/messaging';
+import database from '@react-native-firebase/database';
+import TokenContext from '../../../../TokenContext';
+import ChannelContext from '../../../../ChannelContext';
+import axios from 'axios';
 
 export const HomeScreen = ({navigation}) => {
-  const pubnub = usePubNub();
+  // const pubnub = usePubNub();
   const [location, setLocation] = useState();
   const [latitude, setLatitude] = useState();
   const [status, setStatus] = useState('primary');
@@ -35,8 +39,11 @@ export const HomeScreen = ({navigation}) => {
   const [toolTip, setToolTip] = useState(false);
   const [startFollow, setStartFollow] = useState(false);
   const [sender, setSender] = useState();
-  const [channelID, setChannelID] = useState();
+  const channelID = useContext(ChannelContext);
+  const [tokens, setTokens] = useState([]);
   let watchId;
+
+  const token = useContext(TokenContext);
 
   const renderToggleButton = () => (
     <Button onPress={() => setToolTip(true)} appearance="ghost">
@@ -64,7 +71,38 @@ export const HomeScreen = ({navigation}) => {
     // data: {foo: 'bar'},
   };
 
+  const loadTokens = async () => {
+    let channels = [];
+    await database()
+      .ref(`channels/${channelID}/friends`)
+      .once('value', (snapshot) => {
+        snapshot.forEach((childSnapshot) => {
+          channels.push(childSnapshot.val().channelID);
+        });
+      });
+    const list = await Promise.all(
+      channels.map(async (id) => {
+        const snapshot = await database().ref(`/users/${id}`).once('value');
+
+        let value = snapshot.val();
+        return value.token;
+      }),
+    );
+
+    if (tokens.length < list.length) {
+      console.log('Tokens', list);
+      setTokens(list);
+    }
+  };
+
   useEffect(() => {
+    let currentUser = auth().currentUser;
+    database().ref(`users/${channelID}`).update({
+      status,
+      token,
+      username: currentUser.displayName,
+      email: currentUser.email,
+    });
     request(PERMISSIONS.ANDROID.ACCESS_FINE_LOCATION).then((result) => {
       switch (result) {
         case RESULTS.UNAVAILABLE:
@@ -84,17 +122,23 @@ export const HomeScreen = ({navigation}) => {
               const {latitude, longitude} = position.coords;
               setLocation({latitude, longitude});
               setLatitude(latitude);
-              pubnub.objects.setUUIDMetadata({
-                data: {
-                  name: currentUser.displayName,
-                  email: currentUser.email,
-                  custom: {
-                    status: 'primary',
-                    latitude,
-                    longitude,
-                  },
-                },
+              // pubnub.objects.setUUIDMetadata({
+              //   data: {
+              //     name: currentUser.displayName,
+              //     email: currentUser.email,
+              //     custom: {
+              //       status: 'primary',
+              //       latitude,
+              //       longitude,
+              //     },
+              //   },
+              // });
+              console.log('Channel Id is', channelID);
+              database().ref(`users/${channelID}`).update({
+                latitude,
+                longitude,
               });
+              loadTokens();
             },
             (error) => console.error(error),
             {
@@ -110,14 +154,6 @@ export const HomeScreen = ({navigation}) => {
           break;
       }
     });
-    firestore()
-      .collection('users')
-      .doc(currentUser.email)
-      .get()
-      .then((user) => {
-        id = user.data().phone.slice(-4);
-        setChannelID(id);
-      });
 
     messaging().setBackgroundMessageHandler(async (remoteMessage) => {
       console.log('Message handled in the background!', remoteMessage);
@@ -132,7 +168,7 @@ export const HomeScreen = ({navigation}) => {
         Geolocation.clearWatch(watchId);
       }
     };
-  }, []);
+  }, [channelID]);
 
   useEffect(() => {
     const unsubscribe = messaging().onMessage(async (remoteMessage) => {
@@ -156,7 +192,7 @@ export const HomeScreen = ({navigation}) => {
     return ref.current;
   }
 
-  const currentUser = auth().currentUser;
+  // const currentUser = auth().currentUser;
 
   const mounted = useRef();
   useEffect(() => {
@@ -169,16 +205,20 @@ export const HomeScreen = ({navigation}) => {
         //   message: {location, from: currentUser.displayName},
         //   channel: channelID,
         // });
-        pubnub.objects.setUUIDMetadata({
-          data: {
-            name: currentUser.displayName,
-            email: currentUser.email,
-            custom: {
-              status: 'primary',
-              latitude: location.latitude,
-              longitude: location.longitude,
-            },
-          },
+        // pubnub.objects.setUUIDMetadata({
+        //   data: {
+        //     name: currentUser.displayName,
+        //     email: currentUser.email,
+        //     custom: {
+        //       status: 'primary',
+        //       latitude: location.latitude,
+        //       longitude: location.longitude,
+        //     },
+        //   },
+        // });
+        database().ref(`users/${channelID}`).update({
+          latitude: location.latitude,
+          longitude: location.longitude,
         });
       }
     }
@@ -249,17 +289,36 @@ export const HomeScreen = ({navigation}) => {
             onPress={() => {
               setStatus('primary');
               alert(`Status set to 'Safe'`);
-              pubnub.objects.setUUIDMetadata({
-                data: {
-                  name: currentUser.displayName,
-                  email: currentUser.email,
-                  custom: {
-                    status: 'primary',
-                    latitude: location.latitude,
-                    longitude: location.longitude,
-                  },
-                },
+
+              database().ref(`users/${channelID}`).update({
+                status: 'primary',
               });
+
+              const data = {
+                registration_ids: tokens,
+                collapse_key: 'type_a',
+                data: {
+                  body: `${auth().currentUser.displayName} is safe`,
+                  title: 'ResQ Status!',
+                },
+              };
+
+              console.log('sending request');
+
+              axios
+                .post('https://fcm.googleapis.com/fcm/send', data, {
+                  headers: {
+                    Authorization:
+                      'key=AAAA6VfOmuU:APA91bEEGFRkV4gGRUAxKBh9LTqudcXnC2_K49vTGpMNMxJohbFeBImS9hIttTkp7TT4gFN-vMn-948MHncWYX3sJb14lSkXipWZWmSRWdklRP0FoyLSBD-pzmA0_FXmU4sVsYMdYUsD',
+                    'Content-Type': 'application/json',
+                  },
+                })
+                .then((res) => {
+                  console.log(res.data);
+                })
+                .catch((error) => {
+                  console.log(error);
+                });
             }}>
             I'm fine
           </Button>
@@ -269,19 +328,37 @@ export const HomeScreen = ({navigation}) => {
             appearance="outline"
             onPress={() => {
               setStatus('warning');
+              console.log(status);
               setStartFollow(true);
               alert(`Status set to 'Follow me'`);
-              pubnub.objects.setUUIDMetadata({
-                data: {
-                  name: currentUser.displayName,
-                  email: currentUser.email,
-                  custom: {
-                    status: 'warning',
-                    latitude: location.latitude,
-                    longitude: location.longitude,
-                  },
-                },
+
+              database().ref(`users/${channelID}`).update({
+                status: 'warning',
               });
+
+              const data = {
+                registration_ids: tokens,
+                collapse_key: 'type_a',
+                data: {
+                  body: `${auth().currentUser.displayName} wants you to follow`,
+                  title: 'ResQ Status!',
+                },
+              };
+
+              axios
+                .post('https://fcm.googleapis.com/fcm/send', data, {
+                  headers: {
+                    Authorization:
+                      'key=AAAA6VfOmuU:APA91bEEGFRkV4gGRUAxKBh9LTqudcXnC2_K49vTGpMNMxJohbFeBImS9hIttTkp7TT4gFN-vMn-948MHncWYX3sJb14lSkXipWZWmSRWdklRP0FoyLSBD-pzmA0_FXmU4sVsYMdYUsD',
+                    'Content-Type': 'application/json',
+                  },
+                })
+                .then((res) => {
+                  console.log(res.data);
+                })
+                .catch((error) => {
+                  console.log(error);
+                });
             }}>
             Follow me
           </Button>
@@ -293,17 +370,34 @@ export const HomeScreen = ({navigation}) => {
               setStatus('danger');
               ReactNativeAN.scheduleAlarm(alarmNotifData);
               setVisible(true);
-              pubnub.objects.setUUIDMetadata({
-                data: {
-                  name: currentUser.displayName,
-                  email: currentUser.email,
-                  custom: {
-                    status: 'danger',
-                    latitude: location.latitude,
-                    longitude: location.longitude,
-                  },
-                },
+
+              database().ref(`users/${channelID}`).update({
+                status: 'danger',
               });
+
+              const data = {
+                registration_ids: tokens,
+                collapse_key: 'type_a',
+                data: {
+                  body: `${auth().currentUser.displayName} is in danger!`,
+                  title: 'ResQ Status!',
+                },
+              };
+
+              axios
+                .post('https://fcm.googleapis.com/fcm/send', data, {
+                  headers: {
+                    Authorization:
+                      'key=AAAA6VfOmuU:APA91bEEGFRkV4gGRUAxKBh9LTqudcXnC2_K49vTGpMNMxJohbFeBImS9hIttTkp7TT4gFN-vMn-948MHncWYX3sJb14lSkXipWZWmSRWdklRP0FoyLSBD-pzmA0_FXmU4sVsYMdYUsD',
+                    'Content-Type': 'application/json',
+                  },
+                })
+                .then((res) => {
+                  console.log(res.data);
+                })
+                .catch((error) => {
+                  console.log(error);
+                });
             }}>
             Help me!
           </Button>
@@ -336,16 +430,35 @@ export const HomeScreen = ({navigation}) => {
                   );
                   ReactNativeAN.removeAllFiredNotifications();
                   setStatus('primary');
-                  pubnub.objects.setUUIDMetadata({
-                    data: {
-                      custom: {
-                        status: 'primary',
-                        latitude: location.latitude,
-                        longitude: location.longitude,
-                      },
-                    },
+
+                  database().ref(`users/${channelID}`).update({
+                    status: 'primary',
                   });
                   setVisible(false);
+
+                  const data = {
+                    registration_ids: tokens,
+                    collapse_key: 'type_a',
+                    data: {
+                      body: `${auth().currentUser.displayName} is safe now`,
+                      title: 'ResQ Status!',
+                    },
+                  };
+
+                  axios
+                    .post('https://fcm.googleapis.com/fcm/send', data, {
+                      headers: {
+                        Authorization:
+                          'key=AAAA6VfOmuU:APA91bEEGFRkV4gGRUAxKBh9LTqudcXnC2_K49vTGpMNMxJohbFeBImS9hIttTkp7TT4gFN-vMn-948MHncWYX3sJb14lSkXipWZWmSRWdklRP0FoyLSBD-pzmA0_FXmU4sVsYMdYUsD',
+                        'Content-Type': 'application/json',
+                      },
+                    })
+                    .then((res) => {
+                      console.log(res.data);
+                    })
+                    .catch((error) => {
+                      console.log(error);
+                    });
                 }}>
                 DISABLE
               </Button>

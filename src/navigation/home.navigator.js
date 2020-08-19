@@ -1,4 +1,4 @@
-import React, {useEffect} from 'react';
+import React, {useEffect, useContext} from 'react';
 import {createDrawerNavigator} from '@react-navigation/drawer';
 import {Drawer, DrawerItem, IndexPath} from '@ui-kitten/components';
 import {HomeScreen} from '../scenes/main/home';
@@ -13,8 +13,10 @@ import firebase from '@react-native-firebase/app';
 import messaging from '@react-native-firebase/messaging';
 import {Alert} from 'react-native';
 
-import PubNub from 'pubnub';
-import {PubNubProvider} from 'pubnub-react';
+import ChannelContext from '../../ChannelContext';
+
+// import PubNub from 'pubnub';
+// import {PubNubProvider} from 'pubnub-react';
 
 const {Navigator, Screen} = createDrawerNavigator();
 
@@ -56,14 +58,15 @@ const alarmNotifData = {
   use_big_text: true,
 };
 
-export const HomeNavigator = ({user}) => {
-  const pubnub = new PubNub({
-    publishKey: 'pub-c-59cc5305-2582-4efd-a24b-30b5b53ef765',
-    subscribeKey: 'sub-c-ca070872-e04b-11ea-adf0-fa44e2f062bb',
-    autoNetworkDetection: true,
-    restore: true,
-    uuid: user,
-  });
+export const HomeNavigator = () => {
+  // const user = useContext(ChannelContext);
+  // const pubnub = new PubNub({
+  //   publishKey: 'pub-c-59cc5305-2582-4efd-a24b-30b5b53ef765',
+  //   subscribeKey: 'sub-c-ca070872-e04b-11ea-adf0-fa44e2f062bb',
+  //   autoNetworkDetection: true,
+  //   restore: true,
+  //   uuid: user,
+  // });
 
   const requestUserPermission = async () => {
     const authStatus = await messaging().requestPermission();
@@ -127,7 +130,7 @@ export const HomeNavigator = ({user}) => {
         .once('value')
         .then((snapshot) => {
           let status = snapshot.val();
-          console.log('Alarm status: ', status);
+          // console.log('Alarm status: ', status);
           if (status.alert === true) {
             ReactNativeAN.scheduleAlarm(alarmNotifData);
           } else {
@@ -144,12 +147,12 @@ export const HomeNavigator = ({user}) => {
   }, []);
 
   return (
-    <PubNubProvider client={pubnub}>
-      <Navigator drawerContent={(props) => <DrawerContent {...props} />}>
-        <Screen name="home" component={HomeScreen} />
-        <Screen name="profile" component={ProfileScreen} />
-        <Screen name="contacts" component={ContactsScreen} />
-      </Navigator>
-    </PubNubProvider>
+    // <PubNubProvider client={pubnub}>
+    <Navigator drawerContent={(props) => <DrawerContent {...props} />}>
+      <Screen name="home" component={HomeScreen} />
+      <Screen name="profile" component={ProfileScreen} />
+      <Screen name="contacts" component={ContactsScreen} />
+    </Navigator>
+    // </PubNubProvider>
   );
 };
