@@ -22,7 +22,7 @@
     "@react-navigation/stack": "^5.6.2",
     "@ui-kitten/components": "5.0.0",
     "@ui-kitten/eva-icons": "5.0.0",
-    "axios": "^0.19.2",
+    "axios": "^0.21.1",
     "pubnub": "^4.28.1",
     "pubnub-react": "^2.0.0",
     "react": "16.11.0",
